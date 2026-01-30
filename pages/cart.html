@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Cart</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/public/css/style.css" rel="stylesheet">
+    <link rel="icon" href="/public/images/logo.jpg" type="image/jpeg">
+</head>
+<body>
+               <header>
+        <div class="header-top">
+            <div class="restaurant-brand">
+                <div class="logo-container">
+                    <img src="/public/images/logo.jpg" alt="Schezwan Dragon Logo" class="logo-img">
+                    <div class="logo-text">
+                        <h1 class="restaurant-name">Szechuan Dragon</h1>
+                        <p class="restaurant-tagline">Fiery Flavors, Exotic Tastes</p>
+                    </div>
+                </div>
+            </div>
+            <nav class="header-nav">
+                <a href="/">Home</a>
+                <a href="/menu" >Menu</a>
+                <a href="/help">Help</a>
+                <a href="/cart" class="cart-icon">Your Cart <span class="cart-count">0</span></a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mt-4">
+        <div class="progress-steps mb-4">
+            <div class="d-flex justify-content-center">
+                <div class="step active">1. Cart</div>
+                <div class="step-line"></div>
+                <div class="step">2. User Details</div>
+            </div>
+        </div>
+
+        <h2>Your Cart</h2>
+        
+        <div id="cartItems" class="mt-4"></div>
+
+        <div class="cart-summary mt-4">
+            <h3>Summary</h3>
+            <div class="summary-row">
+                <span>Item Price</span>
+                <span>₹0.00</span>
+            </div>
+            <div class="summary-row">
+                <span>Discount</span>
+                <span>FREE</span>
+            </div>
+            <div class="summary-row">
+                <span>Delivery Fee</span>
+                <span>₹13.00</span>
+            </div>
+            <div class="summary-row">
+                <span>Taxes</span>
+                <span>₹0.00</span>
+            </div>
+            <div class="summary-row summary-total">
+                <span>TOTAL</span>
+                <span class="summary-total">₹0.00</span>
+            </div>
+            
+            <div class="d-flex gap-3 mt-4">
+                <a href="/user-details" class="btn btn-primary flex-grow-1">Next</a>
+                <a href="/" class="btn btn-secondary">Cancel</a>
+            </div>
+        </div>
+    </main>
+        <footer>
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="/login">Admin Login</a>
+                <a href="/help">Contact Us</a>
+            </div>
+        </div>
+        <div class="copyright">
+            © 2026 Szechuan Dragon Restaurant. All rights reserved.
+        </div>
+    </footer>
+
+    <script src="/public/js/script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const cart = JSON.parse(localStorage.getItem('cart')) || [];
+            const cartItems = document.getElementById('cartItems');
+            
+            if (cart.length === 0) {
+                cartItems.innerHTML = '<p class="text-center">Your cart is empty</p>';
+                return;
+            }
+            
+            let total = 0;
+            cartItems.innerHTML = cart.map(item => {
+                const itemTotal = item.price * item.quantity;
+                total += itemTotal;
+                
+                return `
+                    <div class="cart-item mb-3">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4>${item.name}</h4>
+                                <p class="text-muted">Delicious ${item.name.toLowerCase()} prepared fresh daily</p>
+                            </div>
+                            <div class="text-end">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <button class="btn btn-sm btn-secondary" onclick="updateQuantity(${item.id}, -1)">-</button>
+                                    <span>${item.quantity}</span>
+                                    <button class="btn btn-sm btn-secondary" onclick="updateQuantity(${item.id}, 1)">+</button>
+                                </div>
+                                <h4 class="orange-text">₹${itemTotal.toFixed(2)}</h4>
+                                <button class="btn btn-sm btn-link text-danger" onclick="removeItem(${item.id})">Remove</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            document.querySelectorAll('.summary-row')[0].innerHTML = `<span>Item Price</span><span>₹${total.toFixed(2)}</span>`;
+            const finalTotal = total + 13; 
+            document.querySelector('.summary-total').innerHTML = `<span>TOTAL</span><span class="summary-total">₹${finalTotal.toFixed(2)}</span>`;
+        });
+        
+        function updateQuantity(id, change) {
+            const cart = JSON.parse(localStorage.getItem('cart')) || [];
+            const item = cart.find(item => item.id === id);
+            
+            if (item) {
+                item.quantity += change;
+                if (item.quantity < 1) {
+                    removeItem(id);
+                } else {
+                    localStorage.setItem('cart', JSON.stringify(cart));
+                    location.reload();
+                }
+            }
+        }
+        
+        function removeItem(id) {
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            cart = cart.filter(item => item.id !== id);
+            localStorage.setItem('cart', JSON.stringify(cart));
+            location.reload();
+        }
+    </script>
+    <style>
+         .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .logo-img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #FF6B00;
+            box-shadow: 0 4px 8px rgba(255, 107, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .logo-img:hover {
+            transform: rotate(5deg) scale(1.05);
+            box-shadow: 0 6px 12px rgba(255, 107, 0, 0.4);
+        }
+        
+        .logo-text {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        
+        .logo-icon {
+            font-size: 3rem;
+            color: #FF6B00;
+        }
+        .restaurant-brand {
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo-icon {
+            font-size: 3rem;
+            color: #FF6B00;
+        }
+        
+        .logo-text {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .restaurant-name {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 2.2rem;
+            font-weight: bold;
+            margin: 0;
+            background: linear-gradient(45deg, #FF6B00, #FF8C00);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .restaurant-tagline {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 0.9rem;
+            color: #666;
+            margin: 0;
+            font-style: italic;
+        }
+        
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-bottom: 3px solid #FF6B00;
+        }
+        
+        .header-nav {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+        }
+        
+        .header-nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .header-nav a:hover {
+            background-color: rgba(255, 107, 0, 0.2);
+            color: #FF6B00;
+        }
+        
+        .header-nav a.active {
+            background-color: #FF6B00;
+            color: white;
+        }
+        
+        .cart-icon {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background-color: rgba(255, 107, 0, 0.1);
+            border: 1px solid #FF6B00;
+        }
+        
+        .cart-count {
+            background-color: #FF6B00;
+            color: white;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+        
+        @media (max-width: 768px) {
+            .header-top {
+                flex-direction: column;
+                gap: 15px;
+                padding: 15px;
+            }
+            
+            .logo-container {
+                flex-direction: column;
+                text-align: center;
+                gap: 10px;
+            }
+            
+            .restaurant-name {
+                font-size: 1.8rem;
+            }
+            
+            .header-nav {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 10px;
+            }
+            
+            .header-nav a {
+                padding: 6px 12px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</body>
+</html>
