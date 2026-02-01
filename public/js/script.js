@@ -266,6 +266,17 @@ const tempProducts = [
         popular: true
     },
     {
+        id: 30,
+        name: "Chilli Chicken",
+        category: "Chinese",
+        description: "Spicy chicken with capsicum",
+        price: 230,
+        rating: 4.6,
+        reviews_count: 14,
+        image: "/public/images/Chilli-Chicken.jpg",
+        popular: true
+    },
+    {
         id: 25,
         name: "Veg Manchurian Dry",
         category: "Starters",
@@ -319,17 +330,6 @@ const tempProducts = [
         rating: 4.7,
         reviews_count: 18,
         image: "/public/images/Cheesecake.jpg",
-        popular: true
-    },
-    {
-        id: 30,
-        name: "Chilli Chicken",
-        category: "Chinese",
-        description: "Spicy chicken with capsicum",
-        price: 230,
-        rating: 4.6,
-        reviews_count: 14,
-        image: "/public/images/Chilli-Chicken.jpg",
         popular: true
     }
 ];
@@ -408,18 +408,14 @@ function filterProducts(category) {
     const productGrid = document.getElementById('productGrid');
     if (!productGrid) return;
     
-    productGrid.innerHTML = '<div class="text-center"><div class="spinner-border text-orange" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+    const products = tempProducts || [];
+    let filteredProducts = products;
     
-    setTimeout(() => {
-        const products = loadAllProducts();
-        let filteredProducts = products;
-        
-        if (category !== 'All Items') {
-            filteredProducts = products.filter(product => product.category === category);
-        }
-        
-        displayProducts(filteredProducts);
-    }, 300);
+    if (category !== 'All Items') {
+        filteredProducts = products.filter(product => product.category === category);
+    }
+    
+    displayProducts(filteredProducts);
 }
 
 function displayProducts(products) {

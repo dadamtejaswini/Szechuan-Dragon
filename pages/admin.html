@@ -220,8 +220,6 @@
     <div class="header-top">
         <h2 style="color:white;margin:0;">ADMIN PANEL</h2>
         <nav class="header-nav">
-            <a href="/admin">Orders</a>
-            <a href="/admin-add-item">Add Item</a>
             <a href="#" onclick="logout()">Logout</a>
         </nav>
     </div>
@@ -262,7 +260,7 @@ async function loadOrders() {
         <table class="admin-table">
         <thead>
             <tr>
-                <th>ID</th><th>Items</th><th>Customer</th><th>Total</th><th>Status</th><th>Action</th>
+                <th>ID</th><th>Items</th><th>Customer</th><th>Total</th><th>Address</th><th>Phone Number</th><th>Status</th><th>Action</th>
             </tr>
         </thead><tbody>
     `;
@@ -286,6 +284,11 @@ async function loadOrders() {
                 <td>${order.items.map(i => `${i.product_name} x ${i.quantity}`).join('<br>')}</td>
                 <td>${order.first_name} ${order.last_name}</td>
                 <td>₹${order.total_amount}</td>
+                <td>${order.address}</td>
+                <td>
+                    ${order.phone}<br>
+                    ${order.alternate_phone ? `<span style="color:#666;font-size:12px;">Alt: ${order.alternate_phone}</span>` : ''}
+                </td>
                 <td>${badge}</td>
                 <td>${actions}</td>
             </tr>

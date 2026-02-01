@@ -54,13 +54,22 @@
             <p><strong>Hours:</strong> 9:00 AM - 10:00 PM (7 days a week)</p>
         </div>
     </div>
+
+    <div class="help-section cart-item text-center" id="trackOrderSection" style="display: none;">
+        <h3 class="mb-4" style="color: var(--primary-orange);">
+            Track Your Order
+        </h3>
+        <p class="mb-3">Click the button below to track your recent order</p>
+        <button id="trackOrderBtn" class="btn btn-lg" style="background-color: var(--primary-orange); color: white; padding: 12px 30px; font-weight: bold; border: none;">
+            Track My Order
+        </button>
+    </div>
 </main>
 
 <footer>
     <div class="footer-content">
         <div class="copyright">
-            © 2026 Restaurant Help Center.  
-            Need more help? <a href="#" style="color: var(--primary-orange);">Contact Us</a>
+            © 2026 Szechuan Dragon Restaurant. All rights reserved.
         </div>
     </div>
 </footer>
@@ -69,21 +78,52 @@
 <script src="/public/js/script.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('.header-nav a:not(.cart-icon)').forEach(link => {
-            link.addEventListener('click', function(e) {
-                if (this.href && !this.href.includes('#') && this.getAttribute('onclick') !== 'loginUser()') {
-                    e.preventDefault();
-                    
-                    document.body.style.opacity = '0.7';
-                    document.body.style.transition = 'opacity 0.3s ease';
-                    
-                    setTimeout(() => {
-                        window.location.href = this.href;
-                    }, 300);
-                }
-            });
+        updateCartCount();
+        checkOrderStatus();
+        
+        // Track Order button functionality
+        const trackOrderBtn = document.getElementById('trackOrderBtn');
+        
+        trackOrderBtn.addEventListener('click', function() {
+            const currentOrderId = parseInt(localStorage.getItem('currentOrderId')) || 7;
+            window.location.href = `http://localhost:3000/order?orderId=${currentOrderId}`;
         });
     });
+    
+    function updateCartCount() {
+        const cart = JSON.parse(localStorage.getItem('cart')) || [];
+        const count = cart.reduce((total, item) => total + item.quantity, 0);
+        document.querySelector('.cart-count').textContent = count;
+    }
+
+    function checkOrderStatus() {
+        const hasRecentOrder = localStorage.getItem('hasRecentOrder');
+        const orderTimestamp = localStorage.getItem('orderTimestamp');
+        const trackOrderSection = document.getElementById('trackOrderSection');
+        
+        if (hasRecentOrder === 'true' && orderTimestamp) {
+            const currentTime = new Date().getTime();
+            const orderTime = parseInt(orderTimestamp);
+            const fiveMinutes = 5 * 60 * 1000; // 5 minutes in milliseconds
+            
+            // Check if less than 5 minutes have passed
+            if (currentTime - orderTime < fiveMinutes) {
+                trackOrderSection.style.display = 'block';
+                
+                // Set timeout to hide after remaining time
+                const remainingTime = fiveMinutes - (currentTime - orderTime);
+                setTimeout(() => {
+                    localStorage.setItem('hasRecentOrder', 'false');
+                    trackOrderSection.style.display = 'none';
+                }, remainingTime);
+            } else {
+                localStorage.setItem('hasRecentOrder', 'false');
+                trackOrderSection.style.display = 'none';
+            }
+        } else {
+            trackOrderSection.style.display = 'none';
+        }
+    }
 </script>
 <style>
      .logo-container {
@@ -137,6 +177,35 @@
         .logo-text {
             display: flex;
             flex-direction: column;
+        }
+
+        .header-nav a {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            transform: translateZ(0);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .header-nav a:active {
+            transform: scale(0.95);
+            transition: transform 0.1s ease !important;
+        }
+
+        .header-nav a:focus {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+
+        .header-nav a.active {
+            background-color: #FF6B00 !important;
+            color: white !important;
+        }
+
+        .btn:focus,
+        .btn:active,
+        a:focus,
+        a:active {
+            outline: none !important;
+            box-shadow: none !important;
         }
         
         .restaurant-name {
@@ -200,18 +269,52 @@
             gap: 5px;
             background-color: rgba(255, 107, 0, 0.1);
             border: 1px solid #FF6B00;
+            position: relative;
+            z-index: 1;
+        }
+
+        .cart-icon:hover,
+        .cart-icon:focus,
+        .cart-icon:active {
+            background-color: rgba(255, 107, 0, 0.1) !important;
+            border: 1px solid #FF6B00 !important;
+            color: white !important;
+            transform: none !important;
+        }
+
+        .cart-icon:focus {
+            outline: none !important;
+            box-shadow: none !important;
+            background-color: rgba(255, 107, 0, 0.1) !important;
+        }
+
+        .cart-icon:hover .cart-count {
+            background-color: #ff8c00;
         }
         
         .cart-count {
             background-color: #FF6B00;
             color: white;
             border-radius: 50%;
-            width: 22px;
+            min-width: 22px;
             height: 22px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.8rem;
+            font-size: 0.9rem;
+            padding: 0 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: background-color 0.2s ease;
+        }
+
+        #trackOrderBtn {
+            transition: all 0.3s ease;
+        }
+
+        #trackOrderBtn:hover {
+            background-color: #ff8c00 !important;
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(255, 107, 0, 0.3);
         }
         
         @media (max-width: 768px) {
@@ -243,6 +346,5 @@
             }
         }
     </style>
-
 </body>
 </html>

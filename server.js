@@ -66,11 +66,10 @@ const server = http.createServer(async (req, res) => {
                     o.created_at,
                     u.first_name,
                     u.last_name,
-                    u.email,
-                    u.phone,
                     u.address,
-                    u.city,
-                    u.zip_code,
+                    u.address2,
+                    u.phone,
+                    u.alternate_phone,
                     COALESCE(
                         json_agg(
                             json_build_object(
@@ -192,7 +191,6 @@ if (pathname === '/api/submit-order' && method === 'POST') {
     });
     
     req.on('end', async () => {
-        
         try {
             const orderData = JSON.parse(body);
             
@@ -207,14 +205,15 @@ if (pathname === '/api/submit-order' && method === 'POST') {
                 await client.query('BEGIN');
                 
                 const userResult = await client.query(
-                    `INSERT INTO users (first_name, last_name, address, phone, email) 
-                     VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+                    `INSERT INTO users (first_name, last_name, address, address2, phone, alternate_phone) 
+                     VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
                     [
                         orderData.firstName || 'Customer',
                         orderData.lastName || 'Customer',
                         orderData.address || 'Not provided',
+                        orderData.address2 || '',
                         orderData.phone || '000-000-0000',
-                        orderData.email || 'no-email@example.com'
+                        orderData.alternatePhone || ''
                     ]
                 );
                 
@@ -265,35 +264,42 @@ if (pathname === '/api/submit-order' && method === 'POST') {
     return;
 }
     
-    if (pathname === '/api/order-status' && method === 'GET') {
-        const orderId = parsedUrl.query.orderId;
-        if (!orderId) {
-            res.writeHead(400, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Order ID required' }));
-            return;
-        }
-        
-        try {
-            const result = await pool.query(`
-                SELECT o.*, u.first_name, u.last_name
-                FROM orders o
-                JOIN users u ON o.user_id = u.id
-                WHERE o.id = $1
-            `, [orderId]);
-            
-            if (result.rows.length === 0) {
-                res.writeHead(404, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ error: 'Order not found' }));
-            } else {
-                res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify(result.rows[0]));
-            }
-        } catch (err) {
-            res.writeHead(500, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: err.message }));
-        }
+if (pathname === '/api/order-status' && method === 'GET') {
+    const orderId = parsedUrl.query.orderId;
+    if (!orderId) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Order ID required' }));
         return;
     }
+    
+    try {
+        const result = await pool.query(`
+            SELECT 
+                o.*, 
+                u.first_name,
+                u.last_name,
+                u.address,
+                u.address2,
+                u.phone,
+                u.alternate_phone
+            FROM orders o
+            JOIN users u ON o.user_id = u.id
+            WHERE o.id = $1
+        `, [orderId]);
+        
+        if (result.rows.length === 0) {
+            res.writeHead(404, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Order not found' }));
+        } else {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(result.rows[0]));
+        }
+    } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+}
     
     if (pathname === '/api/admin/login' && method === 'POST') {
         let body = '';
