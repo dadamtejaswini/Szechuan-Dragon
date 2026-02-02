@@ -304,7 +304,7 @@ async function confirmOrder(orderId) {
 
     const res = await fetch(`/api/orders/${orderId}/confirm`, { method: 'POST' });
     if (res.ok) {
-        alert('Order confirmed,Thanks for choosing us !!');
+        alert('Order Accepted !!');
         loadOrders();
     }
 }
@@ -314,7 +314,7 @@ async function rejectOrder(orderId) {
 
     const res = await fetch(`/api/orders/${orderId}/reject`, { method: 'POST' });
     if (res.ok) {
-        alert('Order rejected');
+        alert('Order rejected !!');
         loadOrders();
     }
 }
