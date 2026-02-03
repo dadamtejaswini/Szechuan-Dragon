@@ -48,11 +48,7 @@
     <div class="footer-content">
         <div class="footer-links">
             <a href="/login">Admin Login</a>
-            <a href="/contact">Contact Us</a>
-            <a href="/order/status" id="viewOrderStatus" class="order-status-link" style="display: none;">
-                <span id="orderStatusBadge" class="order-badge">⏳</span>
-                Order #<span id="orderId">0</span>
-            </a>
+            <a href="/help">Contact Us</a>
         </div>
         <div class="copyright">
             © 2026 Szechuan Dragon Restaurant. All rights reserved.
@@ -140,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const activeOrder = this.getActiveOrder();
             if (activeOrder && activeOrder.status === 'PENDING') {
                 const orderAge = new Date().getTime() - activeOrder.timestamp;
-                if (orderAge > 120000) { // 2 minutes
+                if (orderAge > 120000) { 
                     const randomStatus = Math.random() > 0.5 ? 'CONFIRMED' : 'CANCELLED';
                     this.updateOrderStatus(randomStatus);
                 }
