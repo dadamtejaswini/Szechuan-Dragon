@@ -27,6 +27,7 @@
                 <a href="/" class="active">Home</a>
                 <a href="/menu">Menu</a>
                 <a href="/help">Help</a>
+                <a href="/about">About Us</a>
                 <a href="/cart" class="cart-icon">Your Cart <span class="cart-count">0</span></a>
             </nav>
         </div>
@@ -35,6 +36,15 @@
     <div class="tagline">
         <h1>Awaken the Dragon in Every Bite</h1>
         <p>Order your favorite items online</p>
+    </div>
+
+     <div class="order-notice">
+        <div class="notice-content">
+            <span class="notice-icon"></span>
+            <p class="notice-text">
+                Please visit our <a href="/about" class="notice-link">About Page</a> for more clarification about our Order Acceptance
+            </p>
+        </div>
     </div>
 
     <div class="container mt-4">
@@ -57,98 +67,65 @@
 </footer>
     
     <script src="/public/js/script.js"></script>
-<script>
-if (result.success) {
-    if (typeof saveRecentOrder === 'function') {
-        saveRecentOrder(result.orderId);
-    }
-    
-    alert('Order submitted successfully!');
-    window.location.href = `/order?orderId=${result.orderId}`;
-}
-document.addEventListener('DOMContentLoaded', function() {
-    class OrderStatusManager {
-        constructor() {
-            this.STORAGE_KEY = 'szechuan_active_order';
-            this.orderStatusLink = document.getElementById('viewOrderStatus');
-            this.orderIdSpan = document.getElementById('orderId');
-            
-            this.checkAndDisplayOrderStatus();
-        }
-        
-        checkAndDisplayOrderStatus() {
-            const activeOrder = this.getActiveOrder();
-            
-            if (activeOrder && activeOrder.status === 'PENDING') {
-                this.showOrderStatus(activeOrder.id);
-            } else {
-                this.hideOrderStatus();
-            }
-        }
-        
-        setActiveOrder(orderId) {
-            const orderData = {
-                id: orderId,
-                status: 'PENDING',
-                timestamp: new Date().getTime()
-            };
-            
-            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(orderData));
-            this.showOrderStatus(orderId);
-        }
-        
-        updateOrderStatus(newStatus) {
-            const activeOrder = this.getActiveOrder();
-            if (activeOrder) {
-                activeOrder.status = newStatus;
-                localStorage.setItem(this.STORAGE_KEY, JSON.stringify(activeOrder));
-                
-                if (newStatus !== 'PENDING') {
-                    setTimeout(() => this.hideOrderStatus(), 5000);
-                }
-            }
-        }
-        
-        clearActiveOrder() {
-            localStorage.removeItem(this.STORAGE_KEY);
-            this.hideOrderStatus();
-        }
-        
-        getActiveOrder() {
-            const orderData = localStorage.getItem(this.STORAGE_KEY);
-            return orderData ? JSON.parse(orderData) : null;
-        }
-        
-        showOrderStatus(orderId) {
-            if (this.orderStatusLink) {
-                this.orderIdSpan.textContent = orderId;
-                this.orderStatusLink.style.display = 'inline-flex';
-            }
-        }
-        
-        hideOrderStatus() {
-            if (this.orderStatusLink) {
-                this.orderStatusLink.style.display = 'none';
-            }
-        }
-        
-        checkOrderStatus() {
-            const activeOrder = this.getActiveOrder();
-            if (activeOrder && activeOrder.status === 'PENDING') {
-                const orderAge = new Date().getTime() - activeOrder.timestamp;
-                if (orderAge > 120000) { 
-                    const randomStatus = Math.random() > 0.5 ? 'CONFIRMED' : 'CANCELLED';
-                    this.updateOrderStatus(randomStatus);
-                }
-            }
-        }
-    }
-    
-});
 
-</script>
     
     <style>
+    .order-notice {
+        background-color: #FFF3E0;
+        border-left: 4px solid #FF6B00;
+        margin: 20px auto 30px;
+        padding: 15px;
+        max-width: 1200px;
+        border-radius: 8px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    }
+    
+    .notice-content {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        justify-content: center;
+    }
+    
+    .notice-icon {
+        font-size: 1.5rem;
+        color: #FF6B00;
+    }
+    
+    .notice-text {
+        color: #333;
+        font-size: 1rem;
+        margin: 0;
+        font-weight: 500;
+    }
+    
+    .notice-link {
+        color: #FF6B00;
+        font-weight: 600;
+        text-decoration: none;
+    }
+    
+    .notice-link:hover {
+        text-decoration: underline;
+        color: #E55A00;
+    }
+    
+    @media (max-width: 768px) {
+        .order-notice {
+            margin: 15px 20px 25px;
+        }
+        
+        .notice-content {
+            flex-direction: column;
+            text-align: center;
+            gap: 10px;
+        }
+        
+        .notice-text {
+            font-size: 0.95rem;
+        }
+    }
+
          .logo-container {
             display: flex;
             align-items: center;

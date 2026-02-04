@@ -7,7 +7,6 @@
     <link rel="icon" href="/public/images/logo.jpg" type="image/jpeg">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-
         .btn-reject {
             background-color: #dc3545;
             border: none;
@@ -21,6 +20,36 @@
 
         .btn-reject:hover {
             background-color: #c82333;
+        }
+        
+        .btn-delivered {
+            background-color: #28a745;
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            font-size: 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+        
+        .btn-delivered:hover {
+            background-color: #218838;
+        }
+        
+        .btn-not-received {
+            background-color: #ffc107;
+            border: none;
+            color: #000;
+            padding: 8px 16px;
+            font-size: 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+        
+        .btn-not-received:hover {
+            background-color: #e0a800;
         }
 
         :root {
@@ -119,7 +148,22 @@
         }
         
         .status-confirmed {
+            background-color: #17a2b8;
+            color: #fff;
+        }
+        
+        .status-delivered {
             background-color: #28a745;
+            color: #fff;
+        }
+        
+        .status-not-received {
+            background-color: #6c757d;
+            color: #fff;
+        }
+        
+        .status-rejected {
+            background-color: #dc3545;
             color: #fff;
         }
         
@@ -147,7 +191,7 @@
         
         main.container {
             padding: 20px;
-            max-width: 1400px;
+            max-width: 1600px;
         }
         
         .no-orders {
@@ -201,16 +245,13 @@
             overflow-x: auto;
         }
         
-        .btn-reject {
-            background-color: #dc3545;
-            border: none;
-            color: white;
-            padding: 8px 16px;
-            font-size: 14px;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-top: 5px;
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
         }
+        
+        .btn-reject { background-color: #dc3545; }
         .btn-reject:hover { background-color: #c82333; }
     </style>
 </head>
@@ -232,6 +273,7 @@
         <div class="stat-card"><h3 id="totalOrders">0</h3><p>Total Orders</p></div>
         <div class="stat-card"><h3 id="pendingOrders">0</h3><p>Pending Orders</p></div>
         <div class="stat-card"><h3 id="confirmedOrders">0</h3><p>Confirmed Orders</p></div>
+        <div class="stat-card"><h3 id="deliveredOrders">0</h3><p>Delivered</p></div>
     </div>
 
     <div class="table-responsive">
@@ -248,74 +290,428 @@ if (!localStorage.getItem('adminLoggedIn')) {
     window.location.href = '/login';
 }
 
+const processingOrders = new Set();
+
 async function loadOrders() {
-    const response = await fetch('/api/orders');
-    const orders = await response.json();
+    try {
+        const response = await fetch('/api/orders');
+        const orders = await response.json();
 
-    document.getElementById('totalOrders').textContent = orders.length;
-    document.getElementById('pendingOrders').textContent = orders.filter(o => o.status === 'pending').length;
-    document.getElementById('confirmedOrders').textContent = orders.filter(o => o.status === 'confirmed').length;
+        document.getElementById('totalOrders').textContent = orders.length;
+        document.getElementById('pendingOrders').textContent = orders.filter(o => o.status === 'pending').length;
+        document.getElementById('confirmedOrders').textContent = orders.filter(o => o.status === 'confirmed').length;
+        document.getElementById('deliveredOrders').textContent = orders.filter(o => o.status === 'delivered').length;
 
-    let html = `
-        <table class="admin-table">
-        <thead>
-            <tr>
-                <th>ID</th><th>Items</th><th>Customer</th><th>Total</th><th>Address</th><th>Phone Number</th><th>Status</th><th>Action</th>
-            </tr>
-        </thead><tbody>
-    `;
-
-    orders.forEach(order => {
-        let badge = `<span class="status-badge status-pending">PENDING</span>`;
-        if (order.status === 'confirmed') badge = `<span class="status-badge status-confirmed">CONFIRMED</span>`;
-        if (order.status === 'rejected') badge = `<span class="status-badge" style="background:#dc3545;color:white;">REJECTED</span>`;
-
-        let actions = '';
-        if (order.status === 'pending') {
-            actions = `
-                <button class="btn-orange" onclick="confirmOrder(${order.id})">Accept</button>
-                <button class="btn-reject" onclick="rejectOrder(${order.id})">Reject</button>
-            `;
-        }
-
-        html += `
-            <tr>
-                <td>#${order.id}</td>
-                <td>${order.items.map(i => `${i.product_name} x ${i.quantity}`).join('<br>')}</td>
-                <td>${order.first_name} ${order.last_name}</td>
-                <td>₹${order.total_amount}</td>
-                <td>${order.address}</td>
-                <td>
-                    ${order.phone}<br>
-                    ${order.alternate_phone ? `<span style="color:#666;font-size:12px;">Alt: ${order.alternate_phone}</span>` : ''}
-                </td>
-                <td>${badge}</td>
-                <td>${actions}</td>
-            </tr>
+        let html = `
+            <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Items</th>
+                    <th>Customer</th>
+                    <th>Total</th>
+                    <th>Address</th>
+                    <th>Phone Number</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
         `;
-    });
 
-    html += `</tbody></table>`;
-    document.getElementById('ordersContainer').innerHTML = html;
+        orders.forEach(order => {
+            let badge = '';
+            switch(order.status) {
+                case 'pending':
+                    badge = `<span class="status-badge status-pending">PENDING</span>`;
+                    break;
+                case 'confirmed':
+                    badge = `<span class="status-badge status-confirmed">CONFIRMED</span>`;
+                    break;
+                case 'delivered':
+                    badge = `<span class="status-badge status-delivered">DELIVERED</span>`;
+                    break;
+                case 'not_received':
+                    badge = `<span class="status-badge status-not-received">NOT RECEIVED</span>`;
+                    break;
+                case 'rejected':
+                    badge = `<span class="status-badge status-rejected">REJECTED</span>`;
+                    break;
+                default:
+                    badge = `<span class="status-badge">${order.status.toUpperCase()}</span>`;
+            }
+
+            let actions = '';
+            
+            const isProcessing = processingOrders.has(order.id);
+            
+            if (order.status === 'pending') {
+                actions = `
+                    <div class="action-buttons">
+                        <button class="btn-orange" 
+                                onclick="confirmOrder(${order.id})" 
+                                ${isProcessing ? 'disabled style="opacity:0.5;"' : ''}
+                                id="confirmBtn_${order.id}">
+                            ${isProcessing ? 'Processing...' : 'Accept'}
+                        </button>
+                        <button class="btn-reject" 
+                                onclick="rejectOrder(${order.id})" 
+                                ${isProcessing ? 'disabled style="opacity:0.5;"' : ''}
+                                id="rejectBtn_${order.id}">
+                            ${isProcessing ? 'Processing...' : 'Reject'}
+                        </button>
+                    </div>
+                `;
+            } else if (order.status === 'confirmed') {
+                actions = `
+                    <div class="action-buttons">
+                        <button class="btn-delivered" 
+                                onclick="markAsDelivered(${order.id})" 
+                                ${isProcessing ? 'disabled style="opacity:0.5;"' : ''}
+                                id="deliveredBtn_${order.id}">
+                            ${isProcessing ? 'Processing...' : 'Delivered'}
+                        </button>
+                        <button class="btn-not-received" 
+                                onclick="markAsNotReceived(${order.id})" 
+                                ${isProcessing ? 'disabled style="opacity:0.5;"' : ''}
+                                id="notReceivedBtn_${order.id}">
+                            ${isProcessing ? 'Processing...' : 'Phone Not Attended'}
+                        </button>
+                    </div>
+                `;
+            } else if (order.status === 'delivered' || order.status === 'not_received' || order.status === 'rejected') {
+                actions = `<span style="color:#666; font-size:12px;">Completed</span>`;
+            }
+
+            html += `
+                <tr id="orderRow_${order.id}">
+                    <td>#${order.id}</td>
+                    <td>${order.items.map(i => `${i.product_name} x ${i.quantity}`).join('<br>')}</td>
+                    <td>${order.first_name} ${order.last_name}</td>
+                    <td>₹${order.total_amount}</td>
+                    <td>${order.address}</td>
+                    <td>
+                        ${order.phone}<br>
+                        ${order.alternate_phone ? `<span style="color:#666;font-size:12px;">Alt: ${order.alternate_phone}</span>` : ''}
+                    </td>
+                    <td id="statusCell_${order.id}">${badge}</td>
+                    <td id="actionCell_${order.id}">${actions}</td>
+                </tr>
+            `;
+        });
+
+        html += `</tbody></table>`;
+        document.getElementById('ordersContainer').innerHTML = html;
+        
+    } catch (error) {
+        console.error('Error loading orders:', error);
+    }
 }
 
 async function confirmOrder(orderId) {
-    if (!confirm('Confirm this order?')) return;
+    if (!confirm(`Accept this order?`)) return;
 
-    const res = await fetch(`/api/orders/${orderId}/confirm`, { method: 'POST' });
-    if (res.ok) {
-        alert('Order Accepted !!');
-        loadOrders();
+    processingOrders.add(orderId);
+    updateOrderButtonState(orderId, 'Processing...', true);
+
+    try {
+        const res = await fetch(`/api/orders/${orderId}/confirm`, { 
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (res.ok) {
+            updateOrderStatusUI(orderId, 'confirmed', 'Order Accepted !!');
+            processingOrders.delete(orderId);
+            
+            setTimeout(() => loadOrders(), 1500);
+        } else {
+            alert('Failed to confirm order');
+            processingOrders.delete(orderId);
+            updateOrderButtonState(orderId, 'Accept', false);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+        processingOrders.delete(orderId);
+        updateOrderButtonState(orderId, 'Accept', false);
     }
 }
 
 async function rejectOrder(orderId) {
-    if (!confirm('Reject this order?')) return;
+    if (!confirm(`Reject this order?`)) return;
 
-    const res = await fetch(`/api/orders/${orderId}/reject`, { method: 'POST' });
-    if (res.ok) {
-        alert('Order rejected !!');
-        loadOrders();
+    processingOrders.add(orderId);
+    updateOrderButtonState(orderId, 'Processing...', true);
+
+    try {
+        const res = await fetch(`/api/orders/${orderId}/reject`, { method: 'POST' });
+        if (res.ok) {
+            updateOrderStatusUI(orderId, 'rejected', 'Order rejected !!');
+            processingOrders.delete(orderId);
+            
+            setTimeout(() => loadOrders(), 1500);
+        } else {
+            alert('Failed to reject order');
+            processingOrders.delete(orderId);
+            updateOrderButtonState(orderId, 'Reject', false);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+        processingOrders.delete(orderId);
+        updateOrderButtonState(orderId, 'Reject', false);
+    }
+}
+
+async function markAsDelivered(orderId) {
+    if (!confirm('Mark this order as delivered?')) return;
+
+    processingOrders.add(orderId);
+    updateOrderUIForDelivery(orderId, 'Delivered');
+
+    try {
+        const res = await fetch(`/api/orders/${orderId}/delivered`, { 
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (res.ok) {
+            setTimeout(() => {
+                processingOrders.delete(orderId);
+                loadOrders();
+            }, 1000);
+        } else {
+            alert('Failed to mark as delivered');
+            processingOrders.delete(orderId);
+            const statusCell = document.getElementById(`statusCell_${orderId}`);
+            const actionCell = document.getElementById(`actionCell_${orderId}`);
+            if (statusCell) statusCell.innerHTML = `<span class="status-badge status-confirmed">CONFIRMED</span>`;
+            if (actionCell) {
+                actionCell.innerHTML = `
+                    <div class="action-buttons">
+                        <button class="btn-delivered" onclick="markAsDelivered(${orderId})" id="deliveredBtn_${orderId}">
+                            Delivered
+                        </button>
+                        <button class="btn-not-received" onclick="markAsNotReceived(${orderId})" id="notReceivedBtn_${orderId}">
+                            Phone Not Attended
+                        </button>
+                    </div>
+                `;
+            }
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+        processingOrders.delete(orderId);
+        const statusCell = document.getElementById(`statusCell_${orderId}`);
+        const actionCell = document.getElementById(`actionCell_${orderId}`);
+        if (statusCell) statusCell.innerHTML = `<span class="status-badge status-confirmed">CONFIRMED</span>`;
+        if (actionCell) {
+            actionCell.innerHTML = `
+                <div class="action-buttons">
+                    <button class="btn-delivered" onclick="markAsDelivered(${orderId})" id="deliveredBtn_${orderId}">
+                        Delivered
+                    </button>
+                    <button class="btn-not-received" onclick="markAsNotReceived(${orderId})" id="notReceivedBtn_${orderId}">
+                        Phone Not Attended
+                    </button>
+                </div>
+            `;
+        }
+    }
+}
+
+async function markAsNotReceived(orderId) {
+    if (!confirm('Mark this order as "Phone Not Attended"?')) return;
+
+    processingOrders.add(orderId);
+    updateOrderUIForNotReceived(orderId, 'Phone Not Attended');
+
+    try {
+        const res = await fetch(`/api/orders/${orderId}/not-received`, { 
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (res.ok) {
+            setTimeout(() => {
+                processingOrders.delete(orderId);
+                loadOrders();
+            }, 1000);
+        } else {
+            alert('Failed to mark as not received');
+            processingOrders.delete(orderId);
+            const statusCell = document.getElementById(`statusCell_${orderId}`);
+            const actionCell = document.getElementById(`actionCell_${orderId}`);
+            if (statusCell) statusCell.innerHTML = `<span class="status-badge status-confirmed">CONFIRMED</span>`;
+            if (actionCell) {
+                actionCell.innerHTML = `
+                    <div class="action-buttons">
+                        <button class="btn-delivered" onclick="markAsDelivered(${orderId})" id="deliveredBtn_${orderId}">
+                            Delivered
+                        </button>
+                        <button class="btn-not-received" onclick="markAsNotReceived(${orderId})" id="notReceivedBtn_${orderId}">
+                            Phone Not Attended
+                        </button>
+                    </div>
+                `;
+            }
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+        processingOrders.delete(orderId);
+        const statusCell = document.getElementById(`statusCell_${orderId}`);
+        const actionCell = document.getElementById(`actionCell_${orderId}`);
+        if (statusCell) statusCell.innerHTML = `<span class="status-badge status-confirmed">CONFIRMED</span>`;
+        if (actionCell) {
+            actionCell.innerHTML = `
+                <div class="action-buttons">
+                    <button class="btn-delivered" onclick="markAsDelivered(${orderId})" id="deliveredBtn_${orderId}">
+                        Delivered
+                    </button>
+                    <button class="btn-not-received" onclick="markAsNotReceived(${orderId})" id="notReceivedBtn_${orderId}">
+                        Phone Not Attended
+                    </button>
+                </div>
+            `;
+        }
+    }
+}
+
+function updateOrderUIForDelivery(orderId, buttonText) {
+    const statusCell = document.getElementById(`statusCell_${orderId}`);
+    const actionCell = document.getElementById(`actionCell_${orderId}`);
+    
+    if (statusCell) {
+        statusCell.innerHTML = `<span class="status-badge status-delivered">DELIVERED</span>`;
+    }
+    
+    if (actionCell) {
+        actionCell.innerHTML = `<span style="color:#666; font-size:12px;">Completed</span>`;
+    }
+    
+    const deliveredBtn = document.getElementById(`deliveredBtn_${orderId}`);
+    const notReceivedBtn = document.getElementById(`notReceivedBtn_${orderId}`);
+    
+    if (deliveredBtn) {
+        deliveredBtn.disabled = true;
+        deliveredBtn.style.opacity = '0.5';
+        deliveredBtn.textContent = 'Processing...';
+    }
+    
+    if (notReceivedBtn) {
+        notReceivedBtn.style.display = 'none';
+    }
+    
+    const deliveredCount = parseInt(document.getElementById('deliveredOrders').textContent);
+    const confirmedCount = parseInt(document.getElementById('confirmedOrders').textContent);
+    
+    document.getElementById('deliveredOrders').textContent = deliveredCount + 1;
+    document.getElementById('confirmedOrders').textContent = Math.max(0, confirmedCount - 1);
+}
+
+function updateOrderUIForNotReceived(orderId, buttonText) {
+    const statusCell = document.getElementById(`statusCell_${orderId}`);
+    const actionCell = document.getElementById(`actionCell_${orderId}`);
+    
+    if (statusCell) {
+        statusCell.innerHTML = `<span class="status-badge status-not-received">PHONE NOT ATTENDED</span>`;
+    }
+    
+    if (actionCell) {
+        actionCell.innerHTML = `<span style="color:#666; font-size:12px;">Completed</span>`;
+    }
+    
+    const deliveredBtn = document.getElementById(`deliveredBtn_${orderId}`);
+    const notReceivedBtn = document.getElementById(`notReceivedBtn_${orderId}`);
+    
+    if (notReceivedBtn) {
+        notReceivedBtn.disabled = true;
+        notReceivedBtn.style.opacity = '0.5';
+        notReceivedBtn.textContent = 'Processing...';
+    }
+    
+    if (deliveredBtn) {
+        deliveredBtn.style.display = 'none';
+    }
+    
+    const confirmedCount = parseInt(document.getElementById('confirmedOrders').textContent);
+    document.getElementById('confirmedOrders').textContent = Math.max(0, confirmedCount - 1);
+}
+
+function updateOrderStatusUI(orderId, status, alertMessage) {
+    const statusCell = document.getElementById(`statusCell_${orderId}`);
+    const actionCell = document.getElementById(`actionCell_${orderId}`);
+    
+    let badge = '';
+    switch(status) {
+        case 'confirmed':
+            badge = `<span class="status-badge status-confirmed">CONFIRMED</span>`;
+            if (actionCell) {
+                actionCell.innerHTML = `
+                    <div class="action-buttons">
+                        <button class="btn-delivered" onclick="markAsDelivered(${orderId})" id="deliveredBtn_${orderId}">
+                            Delivered
+                        </button>
+                        <button class="btn-not-received" onclick="markAsNotReceived(${orderId})" id="notReceivedBtn_${orderId}">
+                            Phone Not Attended
+                        </button>
+                    </div>
+                `;
+            }
+            const pendingCount = parseInt(document.getElementById('pendingOrders').textContent);
+            const confirmedCount = parseInt(document.getElementById('confirmedOrders').textContent);
+            document.getElementById('pendingOrders').textContent = Math.max(0, pendingCount - 1);
+            document.getElementById('confirmedOrders').textContent = confirmedCount + 1;
+            break;
+        case 'rejected':
+            badge = `<span class="status-badge status-rejected">REJECTED</span>`;
+            if (actionCell) {
+                actionCell.innerHTML = `<span style="color:#666; font-size:12px;">Completed</span>`;
+            }
+            const pendingCount2 = parseInt(document.getElementById('pendingOrders').textContent);
+            document.getElementById('pendingOrders').textContent = Math.max(0, pendingCount2 - 1);
+            break;
+    }
+    
+    if (statusCell) {
+        statusCell.innerHTML = badge;
+    }
+    
+}
+
+function updateOrderButtonState(orderId, text, isProcessing) {
+    const confirmBtn = document.getElementById(`confirmBtn_${orderId}`);
+    const rejectBtn = document.getElementById(`rejectBtn_${orderId}`);
+    const deliveredBtn = document.getElementById(`deliveredBtn_${orderId}`);
+    const notReceivedBtn = document.getElementById(`notReceivedBtn_${orderId}`);
+    
+    if (confirmBtn) {
+        confirmBtn.textContent = text;
+        confirmBtn.disabled = isProcessing;
+        if (isProcessing) confirmBtn.style.opacity = '0.5';
+    }
+    
+    if (rejectBtn) {
+        rejectBtn.textContent = text;
+        rejectBtn.disabled = isProcessing;
+        if (isProcessing) rejectBtn.style.opacity = '0.5';
+    }
+    
+    if (deliveredBtn) {
+        deliveredBtn.textContent = text;
+        deliveredBtn.disabled = isProcessing;
+        if (isProcessing) deliveredBtn.style.opacity = '0.5';
+    }
+    
+    if (notReceivedBtn) {
+        notReceivedBtn.textContent = text;
+        notReceivedBtn.disabled = isProcessing;
+        if (isProcessing) notReceivedBtn.style.opacity = '0.5';
     }
 }
 

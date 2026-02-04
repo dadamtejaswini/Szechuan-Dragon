@@ -195,7 +195,7 @@ header {
 .product-image {
     width: 100%;
     height: 180px;
-    background-color: #FFF5E6; /* Changed to light orange */
+    background-color: #FFF5E6; 
     display: flex;
     align-items: center;
     justify-content: center;
@@ -267,7 +267,6 @@ button[type="button"] {
     border: 1px solid var(--primary-orange) !important;
 }
 
-/* Hover state - Darker Orange */
 .btn:hover,
 .btn-primary:hover,
 .login-btn:hover,
@@ -280,7 +279,6 @@ button[type="button"]:hover {
     box-shadow: 0 4px 8px rgba(255, 107, 0, 0.3);
 }
 
-/* Active/Clicked state - DARK GREY */
 .btn:active,
 .btn-primary:active,
 .login-btn:active,
@@ -295,7 +293,6 @@ button[type="button"]:active,
     box-shadow: 0 2px 4px rgba(102, 102, 102, 0.3);
 }
 
-/* Focus state */
 .btn:focus,
 .btn-primary:focus,
 .login-btn:focus,
@@ -306,7 +303,6 @@ button[type="button"]:focus {
     box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.3) !important;
 }
 
-/* Disabled state */
 .btn:disabled,
 .btn-primary:disabled,
 .login-btn:disabled,
@@ -321,7 +317,6 @@ button[type="button"]:disabled {
     box-shadow: none;
 }
 
-/* Secondary button */
 .btn-secondary {
     background-color: var(--secondary-white) !important;
     color: var(--text-dark) !important;
@@ -748,6 +743,147 @@ footer {
     text-align: center;
 }
 
+.quantity-counter {
+    display: flex;
+    align-items: center;
+    background-color: #FF6B00;
+    border-radius: 25px;
+    padding: 2px;
+    width: 120px;
+    justify-content: space-between;
+}
+
+.counter-button {
+    display: flex;
+    align-items: center;
+    background-color: #FF6B00;
+    color: white;
+    border: none;
+    border-radius: 25px;
+    padding: 8px 12px;
+    min-width: 120px;
+    justify-content: space-between;
+    cursor: default;
+    transition: all 0.3s ease;
+}
+
+.counter-button.oval-shape {
+    border-radius: 50px;
+    padding: 8px 16px;
+    min-width: 100px;
+}
+
+.counter-minus,
+.counter-plus {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: white;
+    color: #FF6B00;
+    border-radius: 50%;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 18px;
+    user-select: none;
+    transition: all 0.2s ease;
+}
+
+.counter-minus:hover,
+.counter-plus:hover {
+    background-color: #ff8c00;
+    color: white;
+    transform: scale(1.1);
+}
+
+.counter-number {
+    font-weight: bold;
+    min-width: 30px;
+    text-align: center;
+    font-size: 16px;
+}
+
+.btn.btn-primary {
+    background-color: #FF6B00;
+    border-color: #FF6B00;
+    padding: 8px 16px;
+    min-width: 100px;
+}
+
+.btn.btn-primary:hover {
+    background-color: #ff8c00;
+    border-color: #ff8c00;
+}
+
+.btn-clicked {
+    background-color: #28a745 !important;
+    border-color: #28a745 !important;
+    transform: scale(0.95);
+    transition: all 0.3s ease !important;
+}
+
+.btn-return-orange {
+    background-color: #FF6B00 !important; 
+    border-color: #FF6B00 !important;
+    transition: background-color 0.5s ease !important;
+}
+
+.btn.btn-primary {
+    transition: all 0.3s ease !important;
+}
+
+.btn-decrement, .btn-increment {
+    background-color: white;
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #FF6B00;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.btn-decrement:hover, .btn-increment:hover {
+    background-color: #FF6B00;
+    color: white;
+    transform: scale(1.1);
+}
+
+.btn-decrement:active, .btn-increment:active {
+    transform: scale(0.95);
+}
+
+.quantity-display {
+    color: white;
+    font-weight: bold;
+    font-size: 1.1rem;
+    min-width: 30px;
+    text-align: center;
+    padding: 0 5px;
+}
+
+.btn-primary {
+    transition: all 0.3s ease;
+}
+
+.btn-primary.added {
+    background-color: #FF6B00 !important;
+    color: white !important;
+    transform: scale(0.95);
+}
+
+.product-button-container {
+    min-width: 120px;
+    display: flex;
+    justify-content: flex-end;
+}
+
 footer,
 .footer-content,
 .footer-links,
@@ -784,8 +920,6 @@ footer,
 .footer-links {
     margin-bottom: 10px;
 }
-
-
 
 .order-status-link:hover {
     background-color: #ffd700;

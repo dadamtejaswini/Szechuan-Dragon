@@ -31,18 +31,18 @@ const server = http.createServer(async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    
+
     if (req.method === 'OPTIONS') {
         res.writeHead(200);
         res.end();
         return;
     }
-    
+
     if (req.url.startsWith('/public/')) {
         serveStaticFile(req, res);
         return;
     }
-    
+
     if (pathname === '/api/products' && method === 'GET') {
         try {
             const result = await pool.query('SELECT * FROM products ORDER BY id');
@@ -55,20 +55,20 @@ const server = http.createServer(async (req, res) => {
         }
         return;
     }
-    
+
     if (pathname === '/api/orders' && method === 'GET') {
         try {
             const result = await pool.query(`
                 SELECT 
-                    o.id,
-                    o.total_amount,
-                    o.status,
-                    o.created_at,
-                    u.first_name,
-                    u.last_name,
-                    u.address,
-                    u.address2,
-                    u.phone,
+                    o.id, 
+                    o.total_amount, 
+                    o.status, 
+                    o.created_at, 
+                    u.first_name, 
+                    u.last_name, 
+                    u.address, 
+                    u.address2, 
+                    u.phone, 
                     u.alternate_phone,
                     COALESCE(
                         json_agg(
@@ -88,7 +88,6 @@ const server = http.createServer(async (req, res) => {
                 GROUP BY o.id, u.id
                 ORDER BY o.created_at DESC
             `);
-            
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify(result.rows));
         } catch (err) {
@@ -97,24 +96,24 @@ const server = http.createServer(async (req, res) => {
         }
         return;
     }
-    
+
     if (pathname.startsWith('/api/orders/') && pathname.includes('/confirm') && method === 'POST') {
         try {
             const parts = pathname.split('/');
             const orderId = parts[3];
-            
+
             const result = await pool.query(
                 'UPDATE orders SET status = $1 WHERE id = $2 RETURNING *',
                 ['confirmed', orderId]
             );
-            
+
             if (result.rows.length === 0) {
                 res.writeHead(404, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ error: 'Order not found' }));
             } else {
                 res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ 
-                    success: true, 
+                res.end(JSON.stringify({
+                    success: true,
                     message: 'Order confirmed successfully',
                     order: result.rows[0]
                 }));
@@ -126,53 +125,106 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
-if (pathname.startsWith('/api/orders/') && pathname.includes('/reject') && method === 'POST') {
-    try {
-        const parts = pathname.split('/');
-        const orderId = parts[3];
+    if (pathname.startsWith('/api/orders/') && pathname.includes('/reject') && method === 'POST') {
+        try {
+            const parts = pathname.split('/');
+            const orderId = parts[3];
 
-        const result = await pool.query(
-            'UPDATE orders SET status = $1 WHERE id = $2 RETURNING *',
-            ['rejected', orderId]
-        );
+            const result = await pool.query(
+                'UPDATE orders SET status = $1 WHERE id = $2 RETURNING *',
+                ['rejected', orderId]
+            );
 
-        if (result.rows.length === 0) {
-            res.writeHead(404, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Order not found' }));
-        } else {
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({
-                success: true,
-                message: 'Order rejected successfully',
-                order: result.rows[0]
-            }));
+            if (result.rows.length === 0) {
+                res.writeHead(404, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Order not found' }));
+            } else {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                    success: true,
+                    message: 'Order rejected successfully',
+                    order: result.rows[0]
+                }));
+            }
+        } catch (err) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: err.message }));
         }
-    } catch (err) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: err.message }));
+        return;
     }
-    return;
-}
+
+    if (pathname.startsWith('/api/orders/') && pathname.includes('/delivered') && method === 'POST') {
+        try {
+            const parts = pathname.split('/');
+            const orderId = parts[3];
+
+            const result = await pool.query(
+                'UPDATE orders SET status = $1 WHERE id = $2 RETURNING *',
+                ['delivered', orderId]
+            );
+
+            if (result.rows.length === 0) {
+                res.writeHead(404, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Order not found' }));
+            } else {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                    success: true,
+                    message: 'Order marked as delivered',
+                    order: result.rows[0]
+                }));
+            }
+        } catch (err) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: err.message }));
+        }
+        return;
+    }
+
+    if (pathname.startsWith('/api/orders/') && pathname.includes('/not-received') && method === 'POST') {
+        try {
+            const parts = pathname.split('/');
+            const orderId = parts[3];
+
+            const result = await pool.query(
+                'UPDATE orders SET status = $1 WHERE id = $2 RETURNING *',
+                ['not_received', orderId]
+            );
+
+            if (result.rows.length === 0) {
+                res.writeHead(404, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Order not found' }));
+            } else {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                    success: true,
+                    message: 'Order marked as not received',
+                    order: result.rows[0]
+                }));
+            }
+        } catch (err) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: err.message }));
+        }
+        return;
+    }
 
     if (pathname === '/api/items' && method === 'POST') {
         let body = '';
         req.on('data', chunk => {
             body += chunk.toString();
         });
-        
         req.on('end', async () => {
             try {
                 const data = JSON.parse(body);
-                
                 const result = await pool.query(
                     `INSERT INTO products (name, description, price, category, image_url) 
                      VALUES ($1, $2, $3, $4, $5) RETURNING *`,
                     [data.name, data.description, data.price, data.category, data.image_url || '']
                 );
-                
                 res.writeHead(201, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ 
-                    success: true, 
+                res.end(JSON.stringify({
+                    success: true,
                     message: 'Item added successfully',
                     product: result.rows[0]
                 }));
@@ -183,149 +235,169 @@ if (pathname.startsWith('/api/orders/') && pathname.includes('/reject') && metho
         });
         return;
     }
-    
-if (pathname === '/api/submit-order' && method === 'POST') {
-    let body = '';
-    req.on('data', chunk => {
-        body += chunk.toString();
-    });
-    
-    req.on('end', async () => {
-        try {
-            const orderData = JSON.parse(body);
-            
-            if (!orderData.cartItems || orderData.cartItems.length === 0) {
-                res.writeHead(400, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ error: 'Cart is empty' }));
-                return;
-            }
-            
-            const client = await pool.connect();
+
+    if (pathname === '/api/submit-order' && method === 'POST') {
+        let body = '';
+        req.on('data', chunk => {
+            body += chunk.toString();
+        });
+        req.on('end', async () => {
             try {
-                await client.query('BEGIN');
-                
-                const userResult = await client.query(
-                    `INSERT INTO users (first_name, last_name, address, address2, phone, alternate_phone) 
-                     VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-                    [
-                        orderData.firstName || 'Customer',
-                        orderData.lastName || 'Customer',
-                        orderData.address || 'Not provided',
-                        orderData.address2 || '',
-                        orderData.phone || '000-000-0000',
-                        orderData.alternatePhone || ''
-                    ]
-                );
-                
-                const userId = userResult.rows[0].id;
-                let subtotal = 0;
-                for (const item of orderData.cartItems) {
-                    subtotal += (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1);
+                const orderData = JSON.parse(body);
+
+                if (!orderData.cartItems || orderData.cartItems.length === 0) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'Cart is empty' }));
+                    return;
                 }
-                const deliveryFee = 5.00;
-                const discount = 5.00;
-                const total = subtotal + deliveryFee - discount;
-                
-                const orderResult = await client.query(
-                    `INSERT INTO orders (user_id, total_amount, status) 
-                     VALUES ($1, $2, $3) RETURNING id`,
-                    [userId, total, 'pending']
-                );
-                
-                const orderId = orderResult.rows[0].id;
-                for (const item of orderData.cartItems) {
-                    await client.query(
-                        `INSERT INTO order_items (order_id, product_id, quantity, price) 
-                         VALUES ($1, $2, $3, $4)`,
-                        [orderId, item.id, item.quantity || 1, item.price || 0]
+
+                const client = await pool.connect();
+                try {
+                    await client.query('BEGIN');
+
+                    const userResult = await client.query(
+                        `INSERT INTO users (first_name, last_name, address, address2, phone, alternate_phone) 
+                         VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+                        [
+                            orderData.firstName || 'Customer',
+                            orderData.lastName || 'Customer',
+                            orderData.address || 'Not provided',
+                            orderData.address2 || '',
+                            orderData.phone || '000-000-0000',
+                            orderData.alternatePhone || ''
+                        ]
                     );
+                    const userId = userResult.rows[0].id;
+
+                    let subtotal = 0;
+                    for (const item of orderData.cartItems) {
+                        subtotal += (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1);
+                    }
+
+                    const deliveryFee = 5.00;
+                    const discount = 5.00;
+                    const total = subtotal + deliveryFee - discount;
+
+                    const orderResult = await client.query(
+                        `INSERT INTO orders (user_id, total_amount, status) 
+                         VALUES ($1, $2, $3) RETURNING id`,
+                        [userId, total, 'pending']
+                    );
+                    const orderId = orderResult.rows[0].id;
+
+                    for (const item of orderData.cartItems) {
+                        await client.query(
+                            `INSERT INTO order_items (order_id, product_id, quantity, price) 
+                             VALUES ($1, $2, $3, $4)`,
+                            [orderId, item.id, item.quantity || 1, item.price || 0]
+                        );
+                    }
+
+                    await client.query('COMMIT');
+
+                    res.writeHead(201, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({
+                        success: true,
+                        message: 'Order submitted successfully! Awaiting admin confirmation.',
+                        orderId: orderId
+                    }));
+                } catch (err) {
+                    await client.query('ROLLBACK');
+                    throw err;
+                } finally {
+                    client.release();
                 }
-                
-                await client.query('COMMIT');
-                
-                res.writeHead(201, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ 
-                    success: true, 
-                    message: 'Order submitted successfully! Awaiting admin confirmation.',
-                    orderId: orderId
-                }));
-                
             } catch (err) {
-                await client.query('ROLLBACK');
-                throw err;
-            } finally {
-                client.release();
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                    error: 'Failed to submit order: ' + err.message
+                }));
             }
-        } catch (err) {
-            res.writeHead(500, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Failed to submit order: ' + err.message }));
-        }
-    });
-    return;
-}
-    
-if (pathname === '/api/order-status' && method === 'GET') {
-    const orderId = parsedUrl.query.orderId;
-    if (!orderId) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Order ID required' }));
+        });
         return;
     }
-    
-    try {
-        const result = await pool.query(`
-            SELECT 
-                o.*, 
-                u.first_name,
-                u.last_name,
-                u.address,
-                u.address2,
-                u.phone,
-                u.alternate_phone
-            FROM orders o
-            JOIN users u ON o.user_id = u.id
-            WHERE o.id = $1
-        `, [orderId]);
-        
-        if (result.rows.length === 0) {
-            res.writeHead(404, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Order not found' }));
-        } else {
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify(result.rows[0]));
+
+    if (pathname === '/api/order-status' && method === 'GET') {
+        const orderId = parsedUrl.query.orderId;
+        if (!orderId) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Order ID required' }));
+            return;
         }
-    } catch (err) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: err.message }));
+
+        try {
+            
+            const orderResult = await pool.query(`
+                SELECT 
+                    o.*, 
+                    u.first_name, 
+                    u.last_name, 
+                    u.address, 
+                    u.address2, 
+                    u.phone, 
+                    u.alternate_phone
+                FROM orders o
+                JOIN users u ON o.user_id = u.id
+                WHERE o.id = $1
+            `, [orderId]);
+
+            if (orderResult.rows.length === 0) {
+                res.writeHead(404, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Order not found' }));
+                return;
+            }
+
+            const order = orderResult.rows[0];
+            
+            const itemsResult = await pool.query(`
+                SELECT 
+                    oi.id,
+                    oi.product_id,
+                    oi.quantity,
+                    oi.price,
+                    p.name as product_name,
+                    p.description,
+                    p.image_url
+                FROM order_items oi
+                LEFT JOIN products p ON oi.product_id = p.id
+                WHERE oi.order_id = $1
+            `, [orderId]);
+
+            order.items = itemsResult.rows;
+
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(order));
+        } catch (err) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: err.message }));
+        }
+        return;
     }
-    return;
-}
-    
+
     if (pathname === '/api/admin/login' && method === 'POST') {
         let body = '';
         req.on('data', chunk => {
             body += chunk.toString();
         });
-        
         req.on('end', async () => {
             try {
                 const { email, password } = JSON.parse(body);
                 const result = await pool.query(
-                    'SELECT * FROM admin WHERE email = $1 AND password = $2', 
+                    'SELECT * FROM admin WHERE email = $1 AND password = $2',
                     [email, password]
                 );
-                
+
                 if (result.rows.length > 0) {
                     res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ 
-                        success: true, 
+                    res.end(JSON.stringify({
+                        success: true,
                         message: 'Login successful'
                     }));
                 } else {
                     res.writeHead(401, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ 
-                        success: false, 
-                        message: 'Invalid credentials' 
+                    res.end(JSON.stringify({
+                        success: false,
+                        message: 'Invalid credentials'
                     }));
                 }
             } catch (err) {
@@ -335,22 +407,21 @@ if (pathname === '/api/order-status' && method === 'GET') {
         });
         return;
     }
-    
+
     if (pathname === '/api/cart' && method === 'GET') {
         const sessionId = parsedUrl.query.sessionId;
         try {
             let result;
             if (sessionId) {
                 result = await pool.query(`
-                    SELECT c.*, p.name, p.price, p.image_url 
-                    FROM cart c 
-                    JOIN products p ON c.product_id = p.id 
+                    SELECT c.*, p.name, p.price, p.image_url
+                    FROM cart c
+                    JOIN products p ON c.product_id = p.id
                     WHERE c.session_id = $1
                 `, [sessionId]);
             } else {
                 result = { rows: [] };
             }
-            
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify(result.rows));
         } catch (err) {
@@ -359,22 +430,21 @@ if (pathname === '/api/order-status' && method === 'GET') {
         }
         return;
     }
-    
+
     if (pathname === '/api/cart' && method === 'POST') {
         let body = '';
         req.on('data', chunk => {
             body += chunk.toString();
         });
-        
         req.on('end', async () => {
             try {
                 const { sessionId, productId, quantity } = JSON.parse(body);
-                
+
                 const existing = await pool.query(
                     'SELECT * FROM cart WHERE session_id = $1 AND product_id = $2',
                     [sessionId, productId]
                 );
-                
+
                 if (existing.rows.length > 0) {
                     await pool.query(
                         'UPDATE cart SET quantity = quantity + $1 WHERE session_id = $2 AND product_id = $3',
@@ -386,7 +456,7 @@ if (pathname === '/api/order-status' && method === 'GET') {
                         [sessionId, productId, quantity]
                     );
                 }
-                
+
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: true }));
             } catch (err) {
@@ -396,17 +466,17 @@ if (pathname === '/api/order-status' && method === 'GET') {
         });
         return;
     }
+
     if (pathname === '/api/cart/clear' && method === 'POST') {
         let body = '';
         req.on('data', chunk => {
             body += chunk.toString();
         });
-        
         req.on('end', async () => {
             try {
                 const { sessionId } = JSON.parse(body);
                 await pool.query('DELETE FROM cart WHERE session_id = $1', [sessionId]);
-                
+
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: true }));
             } catch (err) {
@@ -416,7 +486,7 @@ if (pathname === '/api/order-status' && method === 'GET') {
         });
         return;
     }
-    
+
     const pageRoutes = {
         '/': 'pages/index.html',
         '/menu': 'pages/menu.html',
@@ -427,11 +497,13 @@ if (pathname === '/api/order-status' && method === 'GET') {
         '/admin': 'pages/admin.html',
         '/admin-add-item': 'pages/admin-add-item.html',
         '/login': 'pages/login.html',
-        '/help': 'pages/help.html'
+        '/help': 'pages/help.html',
+        '/about': 'pages/about.html',
+        '/bulk-order.html': 'pages/bulk-order.html'
+
     };
-    
+
     const filePath = pageRoutes[pathname];
-    
     if (filePath) {
         serveHTML(filePath, res);
     } else {
@@ -443,7 +515,7 @@ function serveStaticFile(req, res) {
     const filePath = path.join(__dirname, req.url);
     const extname = path.extname(filePath);
     const contentType = getContentType(extname);
-    
+
     fs.readFile(filePath, (err, content) => {
         if (err) {
             if (err.code === 'ENOENT') {
@@ -487,6 +559,6 @@ function getContentType(extname) {
 }
 
 server.listen(PORT, () => {
-    console.log(` Server running at http://localhost:${PORT}`);
+    console.log(`Server running at http://localhost:${PORT}`);
     console.log(`Admin login: admin@restaurant.com / admin123`);
 });

@@ -27,6 +27,7 @@
                 <a href="/">Home</a>
                 <a href="/menu" class="active">Menu</a>
                 <a href="/help">Help</a>
+                <a href="/about">About Us</a>
                 <a href="/cart" class="cart-icon">Your Cart <span class="cart-count">0</span></a>
             </nav>
         </div>
@@ -95,37 +96,48 @@
             }, 300);
         }
         
-        function displayMenuItems(products) {
-            const menuGrid = document.getElementById('menuGrid');
-            if (!menuGrid) return;
-            
-            if (products.length === 0) {
-                menuGrid.innerHTML = '<p class="text-center">No items found in this category.</p>';
-                return;
-            }
-            
-            menuGrid.innerHTML = products.map(product => `
-                <div class="product-card">
-                    <div class="product-image">
-                        <img src="${product.image || '/public/images/dosa.jpg'}" alt="${product.name}" style="width:100%; height:180px; object-fit:cover; border-radius:10px;">
+function displayMenuItems(products) {
+    const menuGrid = document.getElementById('menuGrid');
+    if (!menuGrid) return;
+    
+    if (products.length === 0) {
+        menuGrid.innerHTML = '<p class="text-center">No items found in this category.</p>';
+        return;
+    }
+    
+    menuGrid.innerHTML = products.map(product => {
+        const cartItem = cart.find(item => item.id === product.id);
+        const buttonHtml = cartItem && cartItem.quantity > 0 ? 
+            `<div class="counter-button ${cartItem.quantity === 1 ? 'oval-shape' : ''}" onclick="return false;">
+                <span class="counter-minus" onclick="event.stopPropagation(); handleCounterClick(${product.id}, 'minus')">-</span>
+                <span class="counter-number">${cartItem.quantity}</span>
+                <span class="counter-plus" onclick="event.stopPropagation(); handleCounterClick(${product.id}, 'plus')">+</span>
+            </div>` :
+            `<button class="btn btn-primary" onclick="addToCart(${product.id}, '${product.name}', ${product.price})">
+                Add to Cart
+            </button>`;
+        
+        return `
+            <div class="product-card">
+                <div class="product-image">
+                    <img src="${product.image || '/public/images/dosa.jpg'}" alt="${product.name}" style="width:100%; height:180px; object-fit:cover; border-radius:10px;">
+                </div>
+                <div class="product-info">
+                    <h3 class="product-name">${product.name}</h3>
+                    <div class="product-rating">
+                        ${getStarRating(product.rating)}
+                        <span style="color:#666;font-size:12px;">(${product.reviews_count})</span>
                     </div>
-                    <div class="product-info">
-                        <h3 class="product-name">${product.name}</h3>
-                        <div class="product-rating">
-                            ${getStarRating(product.rating)}
-                            <span style="color:#666;font-size:12px;">(${product.reviews_count})</span>
-                        </div>
-                        <p class="product-description">${product.description}</p>
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span class="product-price">₹${product.price}</span>
-                            <button class="btn btn-primary" onclick="addToCart(${product.id}, '${product.name}', ${product.price})">
-                                Add to Cart
-                            </button>
-                        </div>
+                    <p class="product-description">${product.description}</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="product-price">₹${product.price}</span>
+                        ${buttonHtml}
                     </div>
                 </div>
-            `).join('');
-        }
+            </div>
+        `;
+    }).join('');
+}
         function getStarRating(rating) {
             const fullStars = Math.floor(rating);
             const halfStar = rating % 1 >= 0.5;

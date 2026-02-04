@@ -336,6 +336,8 @@ const tempProducts = [
 
 let cart = JSON.parse(localStorage.getItem('cart')) || [];
 
+const MAX_QUANTITY = 10;
+
 function updateCartCount() {
     const count = cart.reduce((total, item) => total + item.quantity, 0);
     const cartCountElements = document.querySelectorAll('.cart-count');
@@ -348,6 +350,10 @@ function addToCart(productId, productName, price) {
     const existingItem = cart.find(item => item.id === productId);
     
     if (existingItem) {
+        if (existingItem.quantity >= MAX_QUANTITY) {
+            showToast(`Maximum quantity (${MAX_QUANTITY}) reached for ${productName}`);
+            return;
+        }
         existingItem.quantity += 1;
     } else {
         cart.push({
@@ -360,23 +366,147 @@ function addToCart(productId, productName, price) {
     
     localStorage.setItem('cart', JSON.stringify(cart));
     updateCartCount();
-    showToast('Item added to cart!');
+    
+    updateProductButton(productId);
+    
+    showToast(`${productName} added to cart!`);
+}
+
+function updateProductButton(productId) {
+    const product = tempProducts.find(p => p.id === productId);
+    if (!product) return;
+    
+    const cartItem = cart.find(item => item.id === productId);
+    
+    if (!cartItem || cartItem.quantity < 1) {
+        changeButtonToAddToCart(productId, product);
+        return;
+    }
+    
+    document.querySelectorAll(`[onclick*="addToCart(${productId}"]`).forEach(button => {
+        if (cartItem && cartItem.quantity > 0) {
+            const isPlusDisabled = cartItem.quantity >= MAX_QUANTITY;
+            const plusDisabledAttr = isPlusDisabled ? 'style="opacity: 0.5; cursor: not-allowed;"' : '';
+            
+            button.outerHTML = `
+                <div class="counter-button ${cartItem.quantity === 1 ? 'oval-shape' : ''}" onclick="return false;">
+                    <span class="counter-minus" onclick="event.stopPropagation(); handleCounterClick(${productId}, 'minus')">-</span>
+                    <span class="counter-number">${cartItem.quantity}</span>
+                    <span class="counter-plus" ${plusDisabledAttr} onclick="event.stopPropagation(); ${isPlusDisabled ? 'return false;' : `handleCounterClick(${productId}, 'plus')`}">+</span>
+                </div>
+            `;
+        }
+    });
+    
+    document.querySelectorAll(`.counter-button span[onclick*="handleCounterClick(${productId}"]`).forEach(span => {
+        if (cartItem) {
+            const numberSpan = span.parentElement.querySelector('.counter-number');
+            if (numberSpan) {
+                numberSpan.textContent = cartItem.quantity;
+            }
+            if (cartItem.quantity === 1) {
+                span.parentElement.classList.add('oval-shape');
+            } else {
+                span.parentElement.classList.remove('oval-shape');
+            }
+            
+            const plusButton = span.parentElement.querySelector('.counter-plus');
+            if (plusButton) {
+                if (cartItem.quantity >= MAX_QUANTITY) {
+                    plusButton.style.opacity = '0.5';
+                    plusButton.style.cursor = 'not-allowed';
+                    plusButton.onclick = () => false;
+                } else {
+                    plusButton.style.opacity = '1';
+                    plusButton.style.cursor = 'pointer';
+                }
+            }
+        }
+    });
+}
+
+function updateAddToCartButton(productId, productName) {
+    const buttons = document.querySelectorAll(`button[onclick*="addToCart(${productId}"]`);
+    
+    buttons.forEach(button => {
+        const item = cart.find(item => item.id === productId);
+        if (item && item.quantity > 0) {
+            const isPlusDisabled = item.quantity >= MAX_QUANTITY;
+            const plusDisabledAttr = isPlusDisabled ? 'style="opacity: 0.5; cursor: not-allowed;"' : '';
+            
+            button.innerHTML = `
+                <span class="counter-minus" onclick="event.stopPropagation(); updateCartQuantityFromButton(${productId}, ${item.quantity - 1})">-</span>
+                <span class="counter-number">${item.quantity}</span>
+                <span class="counter-plus" ${plusDisabledAttr} onclick="event.stopPropagation(); ${isPlusDisabled ? 'return false;' : `updateCartQuantityFromButton(${productId}, ${item.quantity + 1})`}">+</span>
+            `;
+            
+            button.setAttribute('onclick', 'return false;');
+            button.classList.add('counter-button');
+        }
+    });
+}
+
+function updateCartQuantityFromButton(productId, newQuantity) {
+    const item = cart.find(item => item.id === productId);
+    if (item) {
+        if (newQuantity < 1) {
+            removeFromCart(productId);
+            resetAddToCartButton(productId);
+        } else {
+            item.quantity = newQuantity;
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCartCount();
+            updateAddToCartButton(productId, item.name);
+            updateCartTotal();
+        }
+    }
+}
+
+function changeButtonToAddToCart(productId, product) {
+    const counterButtons = document.querySelectorAll('.counter-button');
+    
+    counterButtons.forEach(button => {
+        if (button.innerHTML.includes(`handleCounterClick(${productId}`)) {
+            button.outerHTML = `
+                <button class="btn btn-primary" onclick="addToCart(${productId}, '${product.name}', ${product.price})">
+                    Add to Cart
+                </button>
+            `;
+        }
+    });
+    
+    document.querySelectorAll(`button[onclick*="addToCart(${productId}"]`).forEach(button => {
+        if (!button) return;
+    });
 }
 
 function removeFromCart(productId) {
     cart = cart.filter(item => item.id !== productId);
     localStorage.setItem('cart', JSON.stringify(cart));
     updateCartCount();
-    location.reload();
+    resetAddToCartButton(productId);
+    
+    if (window.location.pathname.includes('cart')) {
+        location.reload();
+    }
 }
 
 function updateCartQuantity(productId, quantity) {
     const item = cart.find(item => item.id === productId);
+    const product = tempProducts.find(p => p.id === productId);
+    
     if (item) {
-        item.quantity = parseInt(quantity);
-        if (item.quantity < 1) {
+        const newQuantity = parseInt(quantity);
+        
+        if (newQuantity > MAX_QUANTITY) {
+            showToast(`Maximum quantity (${MAX_QUANTITY}) reached for ${product.name}`);
+            return;
+        }
+        
+        if (newQuantity < 1) {
             removeFromCart(productId);
         } else {
+            item.quantity = newQuantity;
             localStorage.setItem('cart', JSON.stringify(cart));
             updateCartCount();
             updateCartTotal();
@@ -427,27 +557,178 @@ function displayProducts(products) {
         return;
     }
     
-    productGrid.innerHTML = products.map(product => `
-        <div class="product-card">
-            <div class="product-image">
-                <img src="${product.image}" alt="${product.name}" style="width:100%; height:180px; object-fit:cover; border-radius:10px;">
-            </div>
-            <div class="product-info">
-                <h3 class="product-name">${product.name}</h3>
-                <div class="product-rating">
-                    ${getStarRating(product.rating)}
-                    <span style="color:#666;font-size:12px;">(${product.reviews_count})</span>
+    productGrid.innerHTML = products.map(product => {
+        const cartItem = cart.find(item => item.id === product.id);
+        const isPlusDisabled = cartItem && cartItem.quantity >= MAX_QUANTITY;
+        const plusDisabledAttr = isPlusDisabled ? 'style="opacity: 0.5; cursor: not-allowed;"' : '';
+        
+        const buttonHtml = cartItem && cartItem.quantity > 0 ? 
+            `<div class="counter-button ${cartItem.quantity === 1 ? 'oval-shape' : ''}" onclick="return false;">
+                <span class="counter-minus" onclick="event.stopPropagation(); handleCounterClick(${product.id}, 'minus')">-</span>
+                <span class="counter-number">${cartItem.quantity}</span>
+                <span class="counter-plus" ${plusDisabledAttr} onclick="event.stopPropagation(); ${isPlusDisabled ? 'return false;' : `handleCounterClick(${product.id}, 'plus')`}">+</span>
+            </div>` :
+            `<button class="btn btn-primary" onclick="addToCart(${product.id}, '${product.name}', ${product.price})">
+                Add to Cart
+            </button>`;
+        
+        return `
+            <div class="product-card">
+                <div class="product-image">
+                    <img src="${product.image}" alt="${product.name}" style="width:100%; height:180px; object-fit:cover; border-radius:10px;">
                 </div>
-                <p class="product-description">${product.description}</p>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span class="product-price">₹${product.price}</span>
-                    <button class="btn btn-primary" onclick="addToCart(${product.id}, '${product.name}', ${product.price})">
+                <div class="product-info">
+                    <h3 class="product-name">${product.name}</h3>
+                    <div class="product-rating">
+                        ${getStarRating(product.rating)}
+                        <span style="color:#666;font-size:12px;">(${product.reviews_count})</span>
+                    </div>
+                    <p class="product-description">${product.description}</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="product-price">₹${product.price}</span>
+                        ${buttonHtml}
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function handleCounterClick(productId, action) {
+    const item = cart.find(item => item.id === productId);
+    const product = tempProducts.find(p => p.id === productId);
+    
+    if (!item && action !== 'plus') return;
+    
+    let newQuantity = item ? item.quantity : 0;
+    
+    if (action === 'plus') {
+        if (newQuantity >= MAX_QUANTITY) {
+            showToast(`Maximum quantity (${MAX_QUANTITY}) reached for ${product.name}`);
+            return;
+        }
+        newQuantity += 1;
+    } else if (action === 'minus') {
+        newQuantity -= 1;
+    }
+    
+    if (newQuantity < 1) {
+        cart = cart.filter(item => item.id !== productId);
+        showToast(`${product.name} removed from cart`);
+        
+        updateButtonToAddToCart(productId, product);
+    } else {
+        if (item) {
+            item.quantity = newQuantity;
+        } else {
+            cart.push({
+                id: productId,
+                name: product.name,
+                price: product.price,
+                quantity: newQuantity
+            });
+        }
+    }
+    
+    localStorage.setItem('cart', JSON.stringify(cart));
+    updateCartCount();
+    
+    updateSingleProductButton(productId, newQuantity);
+    
+    if (window.location.pathname.includes('cart')) {
+        updateCartTotal();
+    }
+}
+
+
+function updateSingleProductButton(productId, newQuantity) {
+    const product = tempProducts.find(p => p.id === productId);
+    if (!product) return;
+    
+    const allButtons = document.querySelectorAll('.counter-button, .btn-primary');
+    
+    allButtons.forEach(button => {
+        const buttonHtml = button.outerHTML;
+        
+        const isThisProductButton = buttonHtml.includes(`handleCounterClick(${productId}`) || 
+                                      buttonHtml.includes(`addToCart(${productId},`);
+        
+        if (isThisProductButton) {
+            if (newQuantity > 0) {
+                const isPlusDisabled = newQuantity >= MAX_QUANTITY;
+                const plusDisabledAttr = isPlusDisabled ? 'style="opacity: 0.5; cursor: not-allowed;"' : '';
+                
+                button.innerHTML = `
+                    <span class="counter-minus" onclick="event.stopPropagation(); handleCounterClick(${productId}, 'minus')">-</span>
+                    <span class="counter-number">${newQuantity}</span>
+                    <span class="counter-plus" ${plusDisabledAttr} onclick="event.stopPropagation(); ${isPlusDisabled ? 'return false;' : `handleCounterClick(${productId}, 'plus')`}">+</span>
+                `;
+                button.className = 'counter-button' + (newQuantity === 1 ? ' oval-shape' : '');
+            } else {
+                button.outerHTML = `
+                    <button class="btn btn-primary" onclick="addToCart(${productId}, '${product.name}', ${product.price})">
                         Add to Cart
                     </button>
-                </div>
-            </div>
-        </div>
-    `).join('');
+                `;
+            }
+        }
+    });
+}
+
+
+function updateButtonToAddToCart(productId, product) {
+    const allButtons = document.querySelectorAll('.counter-button, .btn-primary');
+    
+    allButtons.forEach(button => {
+        const buttonHtml = button.outerHTML;
+        const isThisProductButton = buttonHtml.includes(`handleCounterClick(${productId}`) || 
+                                      buttonHtml.includes(`addToCart(${productId},`);
+        
+        if (isThisProductButton && button.classList.contains('counter-button')) {
+            button.outerHTML = `
+                <button class="btn btn-primary" onclick="addToCart(${productId}, '${product.name}', ${product.price})">
+                    Add to Cart
+                </button>
+            `;
+        }
+    });
+}
+
+function updateAllProductButtons() {
+    const products = tempProducts;
+    
+    document.querySelectorAll('.product-card').forEach(card => {
+        const productId = parseInt(card.querySelector('[data-product-id]')?.getAttribute('data-product-id') || 
+                               card.querySelector('button')?.getAttribute('onclick')?.match(/\d+/)?.[0]);
+        if (productId) {
+            const product = products.find(p => p.id === productId);
+            if (product) {
+                const buttonContainer = card.querySelector('.product-info div:last-child');
+                if (buttonContainer) {
+                    const cartItem = cart.find(item => item.id === productId);
+                    const isPlusDisabled = cartItem && cartItem.quantity >= MAX_QUANTITY;
+                    const plusDisabledAttr = isPlusDisabled ? 'style="opacity: 0.5; cursor: not-allowed;"' : '';
+                    
+                    const buttonHtml = cartItem && cartItem.quantity > 0 ? 
+                        `<div class="counter-button ${cartItem.quantity === 1 ? 'oval-shape' : ''}" onclick="return false;">
+                            <span class="counter-minus" onclick="event.stopPropagation(); handleCounterClick(${product.id}, 'minus')">-</span>
+                            <span class="counter-number">${cartItem.quantity}</span>
+                            <span class="counter-plus" ${plusDisabledAttr} onclick="event.stopPropagation(); ${isPlusDisabled ? 'return false;' : `handleCounterClick(${product.id}, 'plus')`}">+</span>
+                        </div>` :
+                        `<button class="btn btn-primary" onclick="addToCart(${product.id}, '${product.name}', ${product.price})">
+                            Add to Cart
+                        </button>`;
+                    
+                    const currentButton = buttonContainer.querySelector('button, .counter-button');
+                    if (currentButton) {
+                        currentButton.outerHTML = buttonHtml;
+                    } else {
+                        buttonContainer.innerHTML = buttonHtml;
+                    }
+                }
+            }
+        }
+    });
 }
 
 function getStarRating(rating) {
@@ -604,17 +885,56 @@ document.head.appendChild(style);
 
 document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('click', function(e) {
-        if (e.target.matches('.btn, .btn-primary, .login-btn, .btn-add-to-cart, button[type="submit"], button[type="button"]')) {
-            const button = e.target;
+        let button = e.target;
+        
+        if (e.target.matches('.counter-minus, .counter-plus, .counter-number')) {
+            button = e.target.closest('.counter-button') || e.target;
+        }
+        else if (e.target.matches('span') && e.target.closest('button')) {
+            button = e.target.closest('button');
+        }
+        
+        const isRegularButton = button.matches('.btn, .btn-primary, .login-btn, .btn-add-to-cart, button[type="submit"], button[type="button"]');
+        const isCounterButton = button.matches('.counter-button');
+        const isCounterControl = button.matches('.counter-minus, .counter-plus');
+        
+        if (isRegularButton || isCounterButton || isCounterControl) {
+            let elementToAnimate = button;
             
-            button.classList.add('btn-clicked');
-            
-            setTimeout(() => {
-                button.classList.remove('btn-clicked');
-                button.classList.add('btn-return-orange');
+            if (isCounterControl) {
+                elementToAnimate = button;
+                
+                elementToAnimate.style.transform = 'scale(0.8)';
+                elementToAnimate.style.transition = 'transform 0.2s ease';
                 
                 setTimeout(() => {
-                    button.classList.remove('btn-return-orange');
+                    elementToAnimate.style.transform = 'scale(1)';
+                }, 200);
+                
+                const counterButton = button.closest('.counter-button');
+                if (counterButton) {
+                    counterButton.classList.add('btn-clicked');
+                    
+                    setTimeout(() => {
+                        counterButton.classList.remove('btn-clicked');
+                        counterButton.classList.add('btn-return-orange');
+                        
+                        setTimeout(() => {
+                            counterButton.classList.remove('btn-return-orange');
+                        }, 1000);
+                    }, 1000);
+                }
+                return; 
+            }
+            
+            elementToAnimate.classList.add('btn-clicked');
+            
+            setTimeout(() => {
+                elementToAnimate.classList.remove('btn-clicked');
+                elementToAnimate.classList.add('btn-return-orange');
+                
+                setTimeout(() => {
+                    elementToAnimate.classList.remove('btn-return-orange');
                 }, 1000);
             }, 1000);
         }
