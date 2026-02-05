@@ -33,17 +33,20 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
-    if (pathname.startsWith('/')) {
-    serveStaticFile(req, res, '/public/index.html');
+    if (pathname.startsWith('/public/')) {
+    serveStaticFile(req, res);
     return;
-
 }
-
 if (pathname === '/' && method === 'GET') {
-    res.writeHead(200, { 'Content-Type': 'text/html' });
-    res.end('<h1>Backend is running 🚀</h1>');
+    serveHTML('pages/index.html', res);
     return;
 }
+res.writeHead(404, { 'Content-Type': 'text/html' });
+    res.end('<h1>Page not found</h1>');
+
+});
+
+
 
     if (pathname === '/api/products' && method === 'GET') {
         try {
@@ -495,7 +498,7 @@ if (pathname === '/' && method === 'GET') {
     } else {
         serveHTML('pages/index.html', res);
     }
-});
+
 
 function serveStaticFile(req, res) {
     const filePath = path.join(__dirname, 'public', req.url);
