@@ -33,8 +33,15 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
-    if (pathname.startsWith('/public/')) {
-    serveStaticFile(req, res);
+    if (pathname.startsWith('/')) {
+    serveStaticFile(req, res, '/public/index.html');
+    return;
+
+}
+
+if (pathname === '/' && method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end('<h1>Backend is running 🚀</h1>');
     return;
 }
 
