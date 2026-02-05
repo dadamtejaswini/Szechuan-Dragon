@@ -2,9 +2,9 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const url = require('url');
-const { Pool } = require('pg');
+const pool = require('./database');
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 const pool = new Pool({
     user: 'postgres',
@@ -38,10 +38,14 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
-    if (req.url.startsWith('/public/')) {
-        serveStaticFile(req, res);
-        return;
-    }
+    if (
+    pathname.startsWith('/css') ||
+    pathname.startsWith('/js') ||
+    pathname.startsWith('/images')
+) {
+    serveStaticFile(req, res);
+    return;
+}
 
     if (pathname === '/api/products' && method === 'GET') {
         try {
@@ -512,7 +516,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 function serveStaticFile(req, res) {
-    const filePath = path.join(__dirname, req.url);
+    const filePath = path.join(__dirname, 'public', req.url);
     const extname = path.extname(filePath);
     const contentType = getContentType(extname);
 
@@ -533,7 +537,7 @@ function serveStaticFile(req, res) {
 }
 
 function serveHTML(filePath, res) {
-    const fullPath = path.join(__dirname, filePath);
+    const fullPath = path.join(__dirname, 'public', filePath);
     fs.readFile(fullPath, 'utf8', (err, content) => {
         if (err) {
             res.writeHead(404, { 'Content-Type': 'text/html' });
@@ -558,7 +562,8 @@ function getContentType(extname) {
     return types[extname] || 'application/octet-stream';
 }
 
+//console.log(`Admin login: admin@restaurant.com / admin123`);
+
 server.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
-    console.log(`Admin login: admin@restaurant.com / admin123`);
+    console.log(`Server running on port ${PORT}`);
 });
