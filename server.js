@@ -6,22 +6,17 @@ const pool = require('./database');
 
 const PORT = process.env.PORT || 3000;
 
-const pool = new Pool({
-    user: 'postgres',
-    host: 'localhost',
-    database: 'restaurant_db',
-    password: 'Teju@123',
-    port: 5432,
-});
+pool.query('SELECT 1')
+  .then(() => console.log('Connected to PostgreSQL database'))
+  .catch(err => console.error('Database connection error:', err.message));
 
-pool.connect((err, client, release) => {
-    if (err) {
-        console.error('Error connecting to database:', err.message);
-    } else {
-        console.log('Connected to PostgreSQL database');
-        release();
-    }
-});
+const pageRoutes = {
+    '/': 'pages/index.html',
+    '/menu': 'pages/menu.html',
+    '/cart': 'pages/cart.html',
+    '/admin': 'pages/admin.html',
+    '/orders': 'pages/orders.html'
+};
 
 const server = http.createServer(async (req, res) => {
     const parsedUrl = url.parse(req.url, true);
@@ -38,11 +33,7 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
-    if (
-    pathname.startsWith('/css') ||
-    pathname.startsWith('/js') ||
-    pathname.startsWith('/images')
-) {
+    if (pathname.startsWith('/public/')) {
     serveStaticFile(req, res);
     return;
 }
@@ -491,22 +482,6 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
-    const pageRoutes = {
-        '/': 'pages/index.html',
-        '/menu': 'pages/menu.html',
-        '/product': 'pages/product.html',
-        '/cart': 'pages/cart.html',
-        '/user-details': 'pages/user-details.html',
-        '/order': 'pages/order.html',
-        '/admin': 'pages/admin.html',
-        '/admin-add-item': 'pages/admin-add-item.html',
-        '/login': 'pages/login.html',
-        '/help': 'pages/help.html',
-        '/about': 'pages/about.html',
-        '/bulk-order.html': 'pages/bulk-order.html'
-
-    };
-
     const filePath = pageRoutes[pathname];
     if (filePath) {
         serveHTML(filePath, res);
@@ -537,7 +512,7 @@ function serveStaticFile(req, res) {
 }
 
 function serveHTML(filePath, res) {
-    const fullPath = path.join(__dirname, 'public', filePath);
+    const fullPath = path.join(__dirname, filePath);
     fs.readFile(fullPath, 'utf8', (err, content) => {
         if (err) {
             res.writeHead(404, { 'Content-Type': 'text/html' });
