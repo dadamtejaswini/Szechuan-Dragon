@@ -222,7 +222,7 @@ const tempProducts = [
     },
 
     {
-        id: 21,
+        id: 22,
         name: "French Fries",
         category: "Starters",
         description: "Crispy golden potato fries",
@@ -233,7 +233,7 @@ const tempProducts = [
         popular: true
     },
     {
-        id: 22,
+        id: 23,
         name: "Garlic Bread",
         category: "Starters",
         description: "Toasted bread with garlic butter",
@@ -244,7 +244,7 @@ const tempProducts = [
         popular: false
     },
     {
-        id: 23,
+        id: 24,
         name: "Chicken Wings",
         category: "Starters",
         description: "Spicy buffalo chicken wings",
@@ -255,7 +255,7 @@ const tempProducts = [
         popular: true
     },
     {
-        id: 24,
+        id: 25,
         name: "Paneer Tikka",
         category: "Starters",
         description: "Grilled paneer with spices",
@@ -266,7 +266,7 @@ const tempProducts = [
         popular: true
     },
     {
-        id: 30,
+        id: 21,
         name: "Chilli Chicken",
         category: "Chinese",
         description: "Spicy chicken with capsicum",
@@ -277,7 +277,7 @@ const tempProducts = [
         popular: true
     },
     {
-        id: 25,
+        id: 26,
         name: "Veg Manchurian Dry",
         category: "Starters",
         description: "Vegetable balls in dry sauce",
@@ -289,7 +289,7 @@ const tempProducts = [
     },
 
     {
-        id: 26,
+        id: 27,
         name: "Chocolate Brownie",
         category: "Desserts",
         description: "Warm chocolate brownie with ice cream",
@@ -300,7 +300,7 @@ const tempProducts = [
         popular: true
     },
     {
-        id: 27,
+        id: 28,
         name: "Gulab Jamun",
         category: "Desserts",
         description: "Sweet milk balls in sugar syrup",
@@ -311,7 +311,7 @@ const tempProducts = [
         popular: true
     },
     {
-        id: 28,
+        id: 29,
         name: "Ice Cream Sundae",
         category: "Desserts",
         description: "Vanilla ice cream with toppings",
@@ -322,7 +322,7 @@ const tempProducts = [
         popular: false
     },
     {
-        id: 29,
+        id: 30,
         name: "Cheesecake",
         category: "Desserts",
         description: "New York style cheesecake",
