@@ -497,10 +497,16 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
-    if (!pathname.startsWith('/api/')) {
-        serveHTML('pages/index.html', res);
+if (!pathname.startsWith('/api/')) {
+    const filePath = pageRoutes[pathname];
+    if (filePath) {
+        serveHTML(filePath, res);
         return;
     }
+    
+    serveHTML('pages/index.html', res);
+    return;
+}
 
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'API endpoint not found' }));
@@ -591,17 +597,23 @@ function getContentType(extname) {
     return types[extname] || 'application/octet-stream';
 }
 
-server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Server directory: ${__dirname}`);
-    console.log(`Admin login: admin@restaurant.com / admin123`);
-    
-    const indexPath = path.join(__dirname, 'pages', 'index.html');
-    fs.access(indexPath, fs.constants.F_OK, (err) => {
-        if (err) {
-            console.error('WARNING: index.html not found at:', indexPath);
-        } else {
-            console.log('✓ index.html found at:', indexPath);
-        }
+if (require.main === module) {
+    // Running locally
+    server.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+        console.log(`Server directory: ${__dirname}`);
+        console.log(`Admin login: admin@restaurant.com / admin123`);
+        
+        const indexPath = path.join(__dirname, 'pages', 'index.html');
+        fs.access(indexPath, fs.constants.F_OK, (err) => {
+            if (err) {
+                console.error('WARNING: index.html not found at:', indexPath);
+            } else {
+                console.log('✓ index.html found at:', indexPath);
+            }
+        });
     });
-});
+}
+module.exports = (req, res) => {
+    server.emit('request', req, res);
+};
