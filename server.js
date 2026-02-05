@@ -15,7 +15,13 @@ const pageRoutes = {
     '/menu': 'pages/menu.html',
     '/cart': 'pages/cart.html',
     '/admin': 'pages/admin.html',
-    '/orders': 'pages/orders.html'
+    '/orders': 'pages/orders.html',
+    '/about': 'pages/about.html',
+    '/bulk-order': 'pages/bulk-order.html',
+    '/help': 'pages/help.html',
+    '/login': 'pages/login.html',
+    '/order': 'pages/order.html',
+    '/user-details': 'pages/user-details.html'
 };
 
 const server = http.createServer(async (req, res) => {
@@ -27,27 +33,26 @@ const server = http.createServer(async (req, res) => {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    if (req.method === 'OPTIONS') {
+    if (method === 'OPTIONS') {
         res.writeHead(200);
         res.end();
         return;
     }
 
+    // Serve static files
     if (pathname.startsWith('/public/')) {
-    serveStaticFile(req, res);
-    return;
-}
-if (pathname === '/' && method === 'GET') {
-    serveHTML('pages/index.html', res);
-    return;
-}
-res.writeHead(404, { 'Content-Type': 'text/html' });
-    res.end('<h1>Page not found</h1>');
+        serveStaticFile(req, res);
+        return;
+    }
 
-});
+    // Serve HTML pages
+    const filePath = pageRoutes[pathname];
+    if (filePath) {
+        serveHTML(filePath, res);
+        return;
+    }
 
-
-
+    // API Routes
     if (pathname === '/api/products' && method === 'GET') {
         try {
             const result = await pool.query('SELECT * FROM products ORDER BY id');
@@ -331,7 +336,6 @@ res.writeHead(404, { 'Content-Type': 'text/html' });
         }
 
         try {
-            
             const orderResult = await pool.query(`
                 SELECT 
                     o.*, 
@@ -492,28 +496,20 @@ res.writeHead(404, { 'Content-Type': 'text/html' });
         return;
     }
 
-    const filePath = pageRoutes[pathname];
-    if (filePath) {
-        serveHTML(filePath, res);
-    } else {
-        serveHTML('pages/index.html', res);
-    }
-
+    // Default route - serve index.html
+    serveHTML('pages/index.html', res);
+});
 
 function serveStaticFile(req, res) {
-    const filePath = path.join(__dirname, 'public', req.url);
+    const filePath = path.join(__dirname, req.url);
     const extname = path.extname(filePath);
     const contentType = getContentType(extname);
 
     fs.readFile(filePath, (err, content) => {
         if (err) {
-            if (err.code === 'ENOENT') {
-                res.writeHead(404);
-                res.end('File not found');
-            } else {
-                res.writeHead(500);
-                res.end('Server error');
-            }
+            console.error('Error serving static file:', err.message);
+            res.writeHead(404);
+            res.end('File not found');
         } else {
             res.writeHead(200, { 'Content-Type': contentType });
             res.end(content);
@@ -525,6 +521,7 @@ function serveHTML(filePath, res) {
     const fullPath = path.join(__dirname, filePath);
     fs.readFile(fullPath, 'utf8', (err, content) => {
         if (err) {
+            console.error('Error serving HTML:', err.message);
             res.writeHead(404, { 'Content-Type': 'text/html' });
             res.end('<h1>Page not found</h1>');
         } else {
@@ -542,13 +539,16 @@ function getContentType(extname) {
         '.json': 'application/json',
         '.png': 'image/png',
         '.jpg': 'image/jpeg',
-        '.jpeg': 'image/jpeg'
+        '.jpeg': 'image/jpeg',
+        '.gif': 'image/gif',
+        '.svg': 'image/svg+xml',
+        '.ico': 'image/x-icon',
+        '.txt': 'text/plain'
     };
     return types[extname] || 'application/octet-stream';
 }
 
-//console.log(`Admin login: admin@restaurant.com / admin123`);
-
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    console.log(`Admin login: admin@restaurant.com / admin123`);
 });
