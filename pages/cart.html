@@ -268,7 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('goToBulkOrderBtn').addEventListener('click', () => {
         const cart = JSON.parse(localStorage.getItem('cart')) || [];
         sessionStorage.setItem('bulkOrderCart', JSON.stringify(cart));
-        window.location.href = '/bulk-order.html';
+        window.location.href = '/bulk-order';
     });
 });
 </script>
