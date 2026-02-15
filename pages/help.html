@@ -85,9 +85,15 @@
         const trackOrderBtn = document.getElementById('trackOrderBtn');
         
         trackOrderBtn.addEventListener('click', function() {
-            const currentOrderId = parseInt(localStorage.getItem('currentOrderId')) || 7;
-            window.location.href = `http://localhost:3000/order?orderId=${currentOrderId}`;
-        });
+        const currentOrderId = localStorage.getItem('currentOrderId');
+
+        if (!currentOrderId) {
+            alert("No recent order found.");
+            return;
+        }
+
+        window.location.href = `/order?orderId=${currentOrderId}`;
+            });
     });
     
     function updateCartCount() {
